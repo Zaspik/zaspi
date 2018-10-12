@@ -31,15 +31,37 @@ loguj()
 	
 }
 
+mkdir_dir()
+{
+	DIR=$1
+	if [ ! -d ${DIR} ]
+	then
+		loguj 1 "Zakladam adresar ${DIR}"
+		mkdir ${DIR}
+	fi
+	
+}
+
+
 parse_playlist_links()
 {
 	PLAYLIST=$1
 	FORMAT=$2
 	
 	case ${FORMAT} in
-		mp3) DOWNLOADS_DIR=${DOWNLOADS_DIR_MUSIC};;
-		mp4) DOWNLOADS_DIR=${DOWNLOADS_DIR_VIDEO};;
+		mp3) DOWNLOADS_DIR=${DOWNLOADS_DIR_MUSIC}${PLAYLIST}/;;
+		mp4) DOWNLOADS_DIR=${DOWNLOADS_DIR_VIDEO}${PLAYLIST}/;;
 	esac
+	
+	if [ ! -e ${DOWNLOADS_DIR}${STAZENE} ]
+	then
+		touch ${DOWNLOADS_DIR}${STAZENE}
+	fi	
+
+	if [ -e ${DOWNLOADS_DIR}${NESTAZENE} ]
+	then
+		rm ${DOWNLOADS_DIR}${NESTAZENE}
+	fi
 		
 	loguj 1 "Parsuji url pro playlist ${PLAYLIST}"
 	PLAYLIST_URL=$(grep ${PLAYLIST} ${TMP_FILE} | grep href= | sed 's;^.*href=";;g' | sed 's;".*$;;g')
@@ -115,17 +137,6 @@ youtubedl()
 	fi
 }
 
-
-if [ -e ${DOWNLOADS_DIR_MUSIC}${NESTAZENE} ]
-then
-	rm ${DOWNLOADS_DIR_MUSIC}${NESTAZENE}
-fi
-
-if [ -e ${DOWNLOADS_DIR_VIDEO}${NESTAZENE} ]
-then
-	rm ${DOWNLOADS_DIR_VIDEO}${NESTAZENE}
-fi
-
 if [ -e ${PID_FILE} ]
 then
 	PID=$(cat ${PID_FILE})
@@ -142,16 +153,6 @@ fi
 
 rm -f ${DOWNLOADS_DIR_LOCAL}/*
 
-if [ ! -e ${DOWNLOADS_DIR_MUSIC}${STAZENE} ]
-then
-	touch ${DOWNLOADS_DIR_MUSIC}${STAZENE}
-fi
-
-if [ ! -e ${DOWNLOADS_DIR_VIDEO}${STAZENE} ]
-then
-	touch ${DOWNLOADS_DIR_VIDEO}${STAZENE}
-fi
-
 loguj 1 "Stahuji informace site uzivatele (${YOUTUBE_SITE})"
 wget ${YOUTUBE_SITE} -O ${TMP_FILE}  > /dev/null 2>&1
 
@@ -159,12 +160,14 @@ wget ${YOUTUBE_SITE} -O ${TMP_FILE}  > /dev/null 2>&1
 loguj 1 "Zacinam prochazet seznam playlistu pro videa (${SEZNAM_PLAYLIST_VIDEO[*]})"
 for PLAYLIST in ${SEZNAM_PLAYLIST_VIDEO[*]}
 do
+	mkdir_dir ${DOWNLOADS_DIR_VIDEO}${PLAYLIST}
 	parse_playlist_links ${PLAYLIST} mp4 	
 done
 
 loguj 1 "Zacinam prochazet seznam playlistu pro hudbu (${SEZNAM_PLAYLIST_MUSIC[*]})"
 for PLAYLIST in ${SEZNAM_PLAYLIST_MUSIC[*]}
 do
+	mkdir_dir ${DOWNLOADS_DIR_MUSIC}${PLAYLIST}
 	parse_playlist_links ${PLAYLIST} mp3
 done
 
