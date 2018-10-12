@@ -1,34 +1,77 @@
 #!/bin/bash
 #mount -a
 export DOWNLOADS_DIR_LOCAL=/srv/data/$(basename $0 .sh)/
-DOWNLOADS_DIR_VIDEO=/mnt/youtube_video/
-DOWNLOADS_DIR_MUSIC=/mnt/youtube_music/
-TMP_FILE=/tmp/$(basename $0 .sh)
-TMP_FILE_PLAYLIST=/tmp/$(basename $0 .sh)_playlist
+export DOWNLOADS_DIR_VIDEO=/mnt/youtube_video/
+export DOWNLOADS_DIR_MUSIC=/mnt/youtube_music/
+export TMP_FILE=/tmp/$(basename $0 .sh)
+export TMP_FILE_PLAYLIST=/tmp/$(basename $0 .sh)_playlist
 PID_FILE=$0"_pid"
 SEZNAM_PLAYLIST_VIDEO=("videa_5" )
-SEZNAM_PLAYLIST_MUSIC=("hudba_5" )
+SEZNAM_PLAYLIST_MUSIC=("hudba_5" "slovo_5" )
 YOUTUBE_SITE="https://www.youtube.com/user/MrZaspik"
-PREFIX="https://www.youtube.com"
+export PREFIX="https://www.youtube.com"
 export STAZENE=stazene.txt
 export NESTAZENE=nestazene.txt
-
+export LOG_LEVEL=0
 loguj()
 {
 	LEVEL=$1
 	ZPRAVA=$2
-	
-	case ${LEVEL} in
-		1) LEVEL=[INFO];;
-		2) LEVEL=[WARN];;
-		3) LEVEL=[ERROR];;
-		*) LEVEL=[DEBUG];;
-	esac
-	
+	if [ ${LOG_LEVEL} -le ${LEVEL} ]
+	then
+		case ${LEVEL} in
+			0) LEVEL=[DEBUG];;
+			1) LEVEL=[INFO];;
+			2) LEVEL=[WARN];;
+			3) LEVEL=[ERROR];;
+		esac
 	
 	echo $(date +%Y-%m-%d\ %T) ${LEVEL} $USER $$ - ${ZPRAVA}
+	fi
+	
+}
+
+parse_playlist_links()
+{
+	PLAYLIST=$1
+	FORMAT=$2
+	
+	case ${FORMAT} in
+		mp3) DOWNLOADS_DIR=${DOWNLOADS_DIR_MUSIC};;
+		mp4) DOWNLOADS_DIR=${DOWNLOADS_DIR_VIDEO};;
+	esac
+		
+	loguj 1 "Parsuji url pro playlist ${PLAYLIST}"
+	PLAYLIST_URL=$(grep ${PLAYLIST} ${TMP_FILE} | grep href= | sed 's;^.*href=";;g' | sed 's;".*$;;g')
+	if [ ${PLAYLIST_URL} ]
+	then
+		loguj 1 "Stahuji informace playlistu ${PLAYLIST} (${PREFIX}${PLAYLIST_URL})"
+		wget ${PREFIX}${PLAYLIST_URL} -O ${TMP_FILE_PLAYLIST}  > /dev/null 2>&1
+		loguj 1 "Parsuji kod playlistu ${PLAYLIST}"
+		PLAYLIST_CODE=$(echo $PLAYLIST_URL | sed 's;.*=;;g')
+		loguj 1 "Parsuji odkazy pro playlist ${PLAYLIST} (${PLAYLIST_CODE})"
+		URLS=$(grep -E "<a[^>]*href=\"[^>]*list=${PLAYLIST_CODE}[^>]*>" ${TMP_FILE_PLAYLIST} | sed 's;.*<a[^<]*href=\";;g' | sed 's;&.*;;g' | uniq)
+		POCET_V_PLAYLISTU=$(echo ${URLS[*]} | wc -w)
+		loguj 1 "Prochazim seznam odkazu v playlistu ${PLAYLIST} (${PLAYLIST_CODE}) pro ${POCET_V_PLAYLISTU} videa (${URLS[*]})"
+		for URL in ${URLS[*]}
+		do
+			loguj 1 "Parsuji kod videa (${URL}) v playlistu ${PLAYLIST}"
+			YOUTUBE_CODE=$(echo ${URL} | sed 's;.*=;;g')
+			loguj 1 "Kontroluji zda kod videa (${YOUTUBE_CODE}) v playlistu ${PLAYLIST} jiz nebyl stazen"
+			if [ $(grep -c "${YOUTUBE_CODE}" ${DOWNLOADS_DIR}${STAZENE}) = 0 ]
+			then
+				URL=${PREFIX}${URL}				
+				KVALITA=$(echo ${PLAYLIST} | awk -F_ '{print $2}')
+				loguj 1 "Pro kod videa (${YOUTUBE_CODE}) url ${URL} v playlistu ${PLAYLIST} bude zahajeno stahovani v kvalite ${KVALITA}"
+				youtubedl ${DOWNLOADS_DIR} ${URL} ${FORMAT} ${KVALITA} ${YOUTUBE_CODE}
+			else
+				loguj 1 "Kod videa (${YOUTUBE_CODE}) v playlistu ${PLAYLIST} jiz byl stazen"
+			fi
+		done
+	fi
 
 }
+
 
 youtubedl()
 {
@@ -112,73 +155,19 @@ fi
 loguj 1 "Stahuji informace site uzivatele (${YOUTUBE_SITE})"
 wget ${YOUTUBE_SITE} -O ${TMP_FILE}  > /dev/null 2>&1
 
-POCET_V_PLAYLISTU=$(echo ${SEZNAM_PLAYLIST_VIDEO[*]} | wc -w)
-loguj 1 "Prochazim seznam playlistu pro ${POCET_V_PLAYLISTU} videa (${SEZNAM_PLAYLIST_VIDEO[*]})"
+
+loguj 1 "Zacinam prochazet seznam playlistu pro videa (${SEZNAM_PLAYLIST_VIDEO[*]})"
 for PLAYLIST in ${SEZNAM_PLAYLIST_VIDEO[*]}
 do
-	loguj 1 "Parsuji url pro playlist ${PLAYLIST}"
-	PLAYLIST_URL=$(grep ${PLAYLIST} ${TMP_FILE} | grep href= | sed 's;^.*href=";;g' | sed 's;".*$;;g')
-	if [ ${PLAYLIST_URL} ]
-	then
-		loguj 1 "Stahuji informace playlistu ${PLAYLIST} (${PREFIX}${PLAYLIST_URL})"
-		wget ${PREFIX}${PLAYLIST_URL} -O ${TMP_FILE_PLAYLIST}  > /dev/null 2>&1
-		loguj 1 "Parsuji kod playlistu ${PLAYLIST}"
-		PLAYLIST_CODE=$(echo $PLAYLIST_URL | sed 's;.*=;;g')
-		loguj 1 "Parsuji odkazy pro playlist ${PLAYLIST} (${PLAYLIST_CODE})"
-		URLS=$(grep -E "<a[^>]*href=\"[^>]*list=${PLAYLIST_CODE}[^>]*>" ${TMP_FILE_PLAYLIST} | sed 's;.*<a[^<]*href=\";;g' | sed 's;&.*;;g' | uniq)
-		POCET_V_PLAYLISTU=$(echo ${URLS[*]} | wc -w)
-		loguj 1 "Prochazim seznam odkazu v playlistu ${PLAYLIST} (${PLAYLIST_CODE}) pro ${POCET_V_PLAYLISTU} videa (${URLS[*]})"
-		for URL in ${URLS[*]}
-		do
-			loguj 1 "Parsuji kod videa (${URL}) v playlistu ${PLAYLIST}"
-			YOUTUBE_CODE=$(echo ${URL} | sed 's;.*=;;g')
-			loguj 1 "Kontroluji zda kod videa (${YOUTUBE_CODE}) v playlistu ${PLAYLIST} jiz nebyl stazen"
-			if [ $(grep -c "${YOUTUBE_CODE}" ${DOWNLOADS_DIR_VIDEO}${STAZENE}) = 0 ]
-			then
-				URL=${PREFIX}${URL}				
-				KVALITA=$(echo ${PLAYLIST} | awk -F_ '{print $2}')
-				loguj 1 "Pro kod videa (${YOUTUBE_CODE}) url ${URL} v playlistu ${PLAYLIST} bude zahajeno stahovani v kvalite ${KVALITA}"
-				youtubedl ${DOWNLOADS_DIR_VIDEO} ${URL} mp4 ${KVALITA} ${YOUTUBE_CODE}
-			else
-				loguj 1 "Kod videa (${YOUTUBE_CODE}) v playlistu ${PLAYLIST} jiz byl stazen"
-			fi
-		done
-	fi
+	parse_playlist_links ${PLAYLIST} mp4 	
 done
 
 loguj 1 "Zacinam prochazet seznam playlistu pro hudbu (${SEZNAM_PLAYLIST_MUSIC[*]})"
 for PLAYLIST in ${SEZNAM_PLAYLIST_MUSIC[*]}
 do
-	loguj 1 "Parsuji url pro playlist ${PLAYLIST}"
-	PLAYLIST_URL=$(grep ${PLAYLIST} ${TMP_FILE} | grep href= | sed 's;^.*href=";;g' | sed 's;".*$;;g')
-	if [ ${PLAYLIST_URL} ]
-	then
-		loguj 1 "Stahuji informace playlistu ${PLAYLIST} (${PREFIX}${PLAYLIST_URL})"
-		wget ${PREFIX}${PLAYLIST_URL} -O ${TMP_FILE_PLAYLIST} > /dev/null 2>&1
-		loguj 1 "Parsuji kod playlistu ${PLAYLIST}"
-		PLAYLIST_CODE=$(echo $PLAYLIST_URL | sed 's;.*=;;g')
-		loguj 1 "Parsuji odkazy pro playlist ${PLAYLIST}"
-		URLS=$(grep -E "<a[^>]*href=\"[^>]*list=${PLAYLIST_CODE}[^>]*>" ${TMP_FILE_PLAYLIST} | sed 's;.*<a[^<]*href=\";;g' | sed 's;&.*;;g' | uniq)
-		
-		POCET_V_PLAYLISTU=$(echo ${URLS[*]} | wc -w)
-		loguj 1 "Prochazim seznam odkazu v playlistu ${PLAYLIST} (${PLAYLIST_CODE}) pro ${POCET_V_PLAYLISTU} videa (${URLS[*]})"
-		for URL in ${URLS[*]}
-		do
-			loguj 1 "Parsuji kod videa (${URL}) v playlistu ${PLAYLIST}"
-			YOUTUBE_CODE=$(echo ${URL} | sed 's;.*=;;g')
-			loguj 1 "Kontroluji zda kod videa (${YOUTUBE_CODE}) v playlistu ${PLAYLIST} jiz nebyl stazen"
-			if [ $(grep -c $(echo ${YOUTUBE_CODE} | sed 's;^-*;;g') ${DOWNLOADS_DIR_MUSIC}${STAZENE}) = 0 ]
-			then
-				URL=${PREFIX}${URL}		
-				KVALITA=$(echo ${PLAYLIST} | awk -F_ '{print $2}')
-				loguj 1 "Pro kod videa (${YOUTUBE_CODE}) url ${URL} v playlistu ${PLAYLIST} bude zahajeno stahovani v kvalite ${KVALITA}"
-				youtubedl ${DOWNLOADS_DIR_MUSIC} ${URL} mp3 ${KVALITA} ${YOUTUBE_CODE}
-			else
-				loguj 1 "Kod videa (${YOUTUBE_CODE}) v playlistu ${PLAYLIST} jiz byl stazen"
-			fi
-		done
-	fi
+	parse_playlist_links ${PLAYLIST} mp3
 done
+
 loguj 1 "Mazu zamek spusteneho skriptu"
 rm ${PID_FILE}
 exit 0
