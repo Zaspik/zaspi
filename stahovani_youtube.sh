@@ -78,7 +78,7 @@ parse_playlist_links()
 		for URL in ${URLS[*]}
 		do
 			loguj 1 "Parsuji kod videa (${URL}) v playlistu ${PLAYLIST}"
-			YOUTUBE_CODE=$(echo ${URL} | sed 's;.*=;;g')
+			YOUTUBE_CODE=$(echo ${URL} | sed 's;.*=;;g' | sed 's;^-;;g')
 			loguj 1 "Kontroluji zda kod videa (${YOUTUBE_CODE}) v playlistu ${PLAYLIST} jiz nebyl stazen"
 			if [ $(grep -c "${YOUTUBE_CODE}" ${DOWNLOADS_DIR}${STAZENE}) = 0 ]
 			then
