@@ -1,25 +1,34 @@
-name: Create Archive
+name: Create and Commit ZIP
+
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  build:
+  create_and_commit_zip:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Archive folder
+    - name: Create archive
       run: |
-        # Zde definujte příkaz pro zabalení složky do archivu
-        # Například: zip -r archive.zip folder
-        
-        # Příklad pro zabalení složky s názvem "my-folder" do archivu s názvem "my-archive.zip"
-        zip -r my-archive.zip test
+        zip -r my-archive.zip path/to/folder
 
-    - name: Upload Archive
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-archive
-        path: my-archive.zip
+    - name: Move archive to repository
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/archive
+        mv my-archive.zip $GITHUB_WORKSPACE/archive/
+
+    - name: Configure Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: Commit ZIP
+      run: |
+        git add archive/my-archive.zip
+        git commit -m "Add ZIP archive"
+        git push
