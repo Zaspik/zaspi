@@ -14,6 +14,8 @@ jobs:
       id: version
       run: echo "::set-output name=version::$(jq -r .version manifest.json)"
 
+    - name: Zobraz verzi
+      run: echo "${{ steps.version.outputs.version }}"
     - name: Archive folder
       run: |
         # Zde definujte příkaz pro zabalení složky do archivu
@@ -25,5 +27,5 @@ jobs:
     - name: Upload Archive
       uses: actions/upload-artifact@v2
       with:
-        name: my-archive
-        path: my-archive.zip
+        name: my-archive${{ steps.version.outputs.version }}
+        path: my-archive${{ steps.version.outputs.version }}.zip
