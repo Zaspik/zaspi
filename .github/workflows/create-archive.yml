@@ -19,10 +19,6 @@ jobs:
     - name: Archive folder
       run: |
         zip -r my-archive-${{ steps.version.outputs.version }}.zip test
-
-    - name: Create archive
-      run: |
-        zip -r my-archive.zip path/to/folder
     - name: Move archive to repository
       run: |
         mkdir -p $GITHUB_WORKSPACE/archive
