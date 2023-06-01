@@ -3,7 +3,7 @@ name: Create and Commit ZIP
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   create_and_commit_zip:
@@ -15,12 +15,12 @@ jobs:
 
     - name: Create archive
       run: |
-        zip -r my-archive.zip path/to/folder
+        zip -r alive-plugin.zip test/
 
     - name: Move archive to repository
       run: |
         mkdir -p $GITHUB_WORKSPACE/archive
-        mv my-archive.zip $GITHUB_WORKSPACE/archive/
+        mv alive-plugin.zip $GITHUB_WORKSPACE/archive/
 
     - name: Configure Git
       run: |
@@ -29,6 +29,6 @@ jobs:
 
     - name: Commit ZIP
       run: |
-        git add archive/my-archive.zip
+        git add archive/alive-plugin.zip
         git commit -m "Add ZIP archive"
         git push
