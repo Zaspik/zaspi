@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  create_and_commit_zip:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,8 +20,19 @@ jobs:
       run: |
         zip -r my-archive-${{ steps.version.outputs.version }}.zip test
 
-    - name: Upload Archive
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-archive
-        path: my-archive-${{ steps.version.outputs.version }}.zip
+    - name: Create archive
+      run: |
+        zip -r my-archive.zip path/to/folder
+    - name: Move archive to repository
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/archive
+        mv my-archive.zip $GITHUB_WORKSPACE/archive/
+    - name: Configure Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+    - name: Commit ZIP
+      run: |
+        git add archive/my-archive-${{ steps.version.outputs.version }}.zip
+        git commit -m "Add ZIP archive"
+        git push
