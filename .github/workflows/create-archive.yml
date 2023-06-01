@@ -6,29 +6,36 @@ jobs:
   create_and_commit_zip:
     runs-on: ubuntu-latest
 
+    env:
+      FOLDER_NAME: "test"
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-
+      
     - name: Zjisti verzi
       id: version
-      run: echo "::set-output name=version::$(jq -r .version test/manifest.json)"
+      run: echo "::set-output name=version::$(jq -r .version $FOLDER_NAME/manifest.json)"
 
     - name: Zobraz verzi
       run: echo "${{ steps.version.outputs.version }}"
+      
     - name: Archive folder
       run: |
-        zip -r my-archive-${{ steps.version.outputs.version }}.zip test
+        zip -r my-archive-${{ steps.version.outputs.version }}.zip $FOLDER_NAME
+        
     - name: Move archive to repository
       run: |
         mkdir -p $GITHUB_WORKSPACE/archive
-        mv my-archive-${{ steps.version.outputs.version }}.zip $GITHUB_WORKSPACE/archive/
+        mv $FOLDER_NAME-${{ steps.version.outputs.version }}.zip $GITHUB_WORKSPACE/archive/
+        
     - name: Configure Git
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        
     - name: Commit ZIP
       run: |
-        git add archive/my-archive-${{ steps.version.outputs.version }}.zip
-        git commit -m "Add ZIP archive"
+        git add archive/$FOLDER_NAME-${{ steps.version.outputs.version }}.zip
+        git commit -m "Add $FOLDER_NAME version ${{ steps.version.outputs.version }} archive"
         git push
