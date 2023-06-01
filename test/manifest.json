@@ -1,0 +1,13 @@
+{
+  "manifest_version": 2,
+  "name": "Jira Subtask Status Badge",
+  "version": "1.0",
+  "description": "Adds status badges to subtasks in Jira sprint board.",
+  "permissions": ["https://fujira.csin.cz/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://fujira.csin.cz/secure/RapidBoard.jspa?*"],
+      "js": ["subtaskStatusBadge.js"]
+    }
+  ]
+}
