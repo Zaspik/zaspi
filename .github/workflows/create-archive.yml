@@ -1,34 +1,29 @@
-name: Create and Commit ZIP
-
+name: Create Archive
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
-  create_and_commit_zip:
+  build:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Create archive
-      run: |
-        zip -r alive-plugin.zip test/
+    - name: Zjisti verzi
+      id: version
+      run: echo "::set-output name=version::$(jq -r .version manifest.json)"
 
-    - name: Move archive to repository
+    - name: Archive folder
       run: |
-        mkdir -p $GITHUB_WORKSPACE/archive
-        mv alive-plugin.zip $GITHUB_WORKSPACE/archive/
+        # Zde definujte příkaz pro zabalení složky do archivu
+        # Například: zip -r archive.zip folder
+        
+        # Příklad pro zabalení složky s názvem "my-folder" do archivu s názvem "my-archive.zip"
+        zip -r my-archive${{ steps.version.outputs.version }}.zip test
 
-    - name: Configure Git
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-    - name: Commit ZIP
-      run: |
-        git add archive/alive-plugin.zip
-        git commit -m "Add ZIP archive"
-        git push
+    - name: Upload Archive
+      uses: actions/upload-artifact@v2
+      with:
+        name: my-archive
+        path: my-archive.zip
