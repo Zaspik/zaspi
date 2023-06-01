@@ -22,7 +22,7 @@ jobs:
     - name: Move archive to repository
       run: |
         mkdir -p $GITHUB_WORKSPACE/archive
-        mv my-archive.zip $GITHUB_WORKSPACE/archive/
+        mv my-archive${{ steps.version.outputs.version }}.zip $GITHUB_WORKSPACE/archive/
     - name: Configure Git
       run: |
         git config --local user.email "action@github.com"
