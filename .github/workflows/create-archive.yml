@@ -12,16 +12,12 @@ jobs:
 
     - name: Zjisti verzi
       id: version
-      run: echo "::set-output name=version::$(jq -r .version manifest.json)"
+      run: echo "::set-output name=version::$(jq -r .version test/manifest.json)"
 
     - name: Zobraz verzi
       run: echo "${{ steps.version.outputs.version }}"
     - name: Archive folder
       run: |
-        # Zde definujte příkaz pro zabalení složky do archivu
-        # Například: zip -r archive.zip folder
-        
-        # Příklad pro zabalení složky s názvem "my-folder" do archivu s názvem "my-archive.zip"
         zip -r my-archive${{ steps.version.outputs.version }}.zip test
 
     - name: Upload Archive
