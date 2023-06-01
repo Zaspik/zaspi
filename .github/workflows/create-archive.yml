@@ -22,7 +22,7 @@ jobs:
       
     - name: Archive folder
       run: |
-        zip -r my-archive-${{ steps.version.outputs.version }}.zip $FOLDER_NAME
+        zip -r $FOLDER_NAME-${{ steps.version.outputs.version }}.zip $FOLDER_NAME
         
     - name: Move archive to repository
       run: |
