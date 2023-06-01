@@ -1,0 +1,25 @@
+name: Create Archive
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Archive folder
+      run: |
+        # Zde definujte příkaz pro zabalení složky do archivu
+        # Například: zip -r archive.zip folder
+        
+        # Příklad pro zabalení složky s názvem "my-folder" do archivu s názvem "my-archive.zip"
+        zip -r my-archive.zip test
+
+    - name: Upload Archive
+      uses: actions/upload-artifact@v2
+      with:
+        name: my-archive
+        path: my-archive.zip
